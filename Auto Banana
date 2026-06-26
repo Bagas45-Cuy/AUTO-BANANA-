@@ -58,56 +58,50 @@ StatusLabel.TextSize = 14.000
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 
-_G.AutoBananaTouch = false -- Set default ke FALSE saat GUI pertama kali muncul
+_G.AutoBananaTouch = true
 
--- Fungsi Loop Auto Banana
-local function startBananaLoop()
-    task.spawn(function()
-        while _G.AutoBananaTouch do
-            local char = Player.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+while _G.AutoBananaTouch do
+    local char = Player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
 
-            if hrp and workspace:FindFirstChild("Bananas") then
-                for _, banana in pairs(workspace.Bananas:GetChildren()) do
-                    if not _G.AutoBananaTouch then break end
-                    
-                    -- Validasi awal
-                    if banana:FindFirstChildOfClass("TouchTransmitter") and banana.Transparency == 0 then
-                        local touchPart = banana:IsA("BasePart") and banana or banana:FindFirstChildWhichIsA("BasePart", true)
-                        
-                        if touchPart then
-                            -- === SYSTEM FILTER ANTI-CRASH ===
-                            local size = touchPart.Size
-                            if size.X > 10 or size.Y > 10 or size.Z > 10 then
-                                continue 
-                            end
-                            
-                            local lowerName = string.lower(banana.Name)
-                            if string.find(lowerName, "big") or string.find(lowerName, "giant") or string.find(lowerName, "mega") or string.find(lowerName, "obby") then
-                                continue 
-                            end
-                            -- ===============================================
-
-                            StatusLabel.Text = "Status: Collecting..."
-                            
-                            -- Proses sentuhan
-                            pcall(function()
-                                firetouchinterest(touchPart, hrp, 0) 
-                                task.wait(0.02)                      
-                                firetouchinterest(touchPart, hrp, 1) 
-                            end)
-                            
-                            task.wait(0.3) 
-                        end
+    if hrp and workspace:FindFirstChild("Bananas") then
+        for _, banana in pairs(workspace.Bananas:GetChildren()) do
+            if not _G.AutoBananaTouch then break end
+            
+            -- Validasi awal: objek aktif dan memiliki TouchTransmitter
+            if banana:FindFirstChildOfClass("TouchTransmitter") and banana.Transparency == 0 then
+                local touchPart = banana:IsA("BasePart") and banana or banana:FindFirstChildWhichIsA("BasePart", true)
+                
+                if touchPart then
+                    -- === SYSTEM FILTER ANTI-CRASH (PISANG BESAR) ===
+                    local size = touchPart.Size
+                    if size.X > 10 or size.Y > 10 or size.Z > 10 then
+                        continue -- Skip pisang raksasa ini!
                     end
+                    
+                    local lowerName = string.lower(banana.Name)
+                    if string.find(lowerName, "big") or string.find(lowerName, "giant") or string.find(lowerName, "mega") or string.find(lowerName, "obby") then
+                        continue -- Skip!
+                    end
+                    -- ===============================================
+
+                    -- Proses sentuhan satu per satu
+                    pcall(function()
+                        firetouchinterest(touchPart, hrp, 0) -- Mulai sentuh
+                        task.wait(0.02)                      -- Jeda mikro agar server sempat mencatat poin
+                        firetouchinterest(touchPart, hrp, 1) -- Paksa lepas sentuhan (reset state objek lama)
+                    end)
+                    
+                    -- JEDA DIPERLAMBAT: Menunggu 0.07 detik sebelum lanjut ke pisang berikutnya
+                    task.wait(0.07) 
                 end
             end
-            StatusLabel.Text = _G.AutoBananaTouch and "Status: Waiting for Bananas..." or "Status: Idle"
-            task.wait(0.5)
         end
-    end)
+    end
+    
+    -- Jeda sebelum mendeteksi ulang folder jika semua pisang di room sudah habis
+    task.wait(0.5)
 end
-
 -- === INTERAKSI TOMBOL ON/OFF ===
 ToggleButton.MouseButton1Click:Connect(function()
     _G.AutoBananaTouch = not _G.AutoBananaTouch
