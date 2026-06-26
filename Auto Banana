@@ -1,0 +1,127 @@
+-- === UI LIBRARY & INITIALIZATION ===
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local UICorner = Instance.new("UICorner")
+local Title = Instance.new("TextLabel")
+local ToggleButton = Instance.new("TextButton")
+local UICorner2 = Instance.new("UICorner")
+local StatusLabel = Instance.new("TextLabel")
+
+-- Properties GUI
+ScreenGui.Parent = game:GetService("CoreGui") -- Menggunakan CoreGui agar tidak hilang saat mati (Reset)
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+MainFrame.Name = "BagasHubMain"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.Position = UDim2.new(0.5, -100, 0.5, -75) -- Berada di tengah layar
+MainFrame.Size = UDim2.new(0, 200, 0, 150)
+MainFrame.Active = true
+MainFrame.Draggable = true -- Membuat UI bisa digeser/drag
+
+UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.Parent = MainFrame
+
+Title.Name = "Title"
+Title.Parent = MainFrame
+Title.BackgroundTransparency = 1.000
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "Auto Banana / Bagas Hub"
+Title.TextColor3 = Color3.fromRGB(255, 230, 0) -- Warna Kuning Pisang
+Title.TextSize = 18.000
+
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Parent = MainFrame
+ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50) -- Default Merah (OFF)
+ToggleButton.Position = UDim2.new(0.1, 0, 0.4, 0)
+ToggleButton.Size = UDim2.new(0.8, 0, 0, 40)
+ToggleButton.Font = Enum.Font.SourceSansBold
+ToggleButton.Text = "TOGGLE: OFF"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.TextSize = 16.000
+
+UICorner2.CornerRadius = UDim.new(0, 8)
+UICorner2.Parent = ToggleButton
+
+StatusLabel.Name = "StatusLabel"
+StatusLabel.Parent = MainFrame
+StatusLabel.BackgroundTransparency = 1.000
+StatusLabel.Position = UDim2.new(0, 0, 0.75, 0)
+StatusLabel.Size = UDim2.new(1, 0, 0, 30)
+StatusLabel.Font = Enum.Font.SourceSansItalic
+StatusLabel.Text = "Status: Idle"
+StatusLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+StatusLabel.TextSize = 14.000
+
+-- === LOGIKA UTAMA (AUTO BANANA TOUCH) ===
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+
+_G.AutoBananaTouch = false -- Set default ke FALSE saat GUI pertama kali muncul
+
+-- Fungsi Loop Auto Banana
+local function startBananaLoop()
+    task.spawn(function()
+        while _G.AutoBananaTouch do
+            local char = Player.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
+            if hrp and workspace:FindFirstChild("Bananas") then
+                for _, banana in pairs(workspace.Bananas:GetChildren()) do
+                    if not _G.AutoBananaTouch then break end
+                    
+                    -- Validasi awal
+                    if banana:FindFirstChildOfClass("TouchTransmitter") and banana.Transparency == 0 then
+                        local touchPart = banana:IsA("BasePart") and banana or banana:FindFirstChildWhichIsA("BasePart", true)
+                        
+                        if touchPart then
+                            -- === SYSTEM FILTER ANTI-CRASH ===
+                            local size = touchPart.Size
+                            if size.X > 10 or size.Y > 10 or size.Z > 10 then
+                                continue 
+                            end
+                            
+                            local lowerName = string.lower(banana.Name)
+                            if string.find(lowerName, "big") or string.find(lowerName, "giant") or string.find(lowerName, "mega") or string.find(lowerName, "obby") then
+                                continue 
+                            end
+                            -- ===============================================
+
+                            StatusLabel.Text = "Status: Collecting..."
+                            
+                            -- Proses sentuhan
+                            pcall(function()
+                                firetouchinterest(touchPart, hrp, 0) 
+                                task.wait(0.02)                      
+                                firetouchinterest(touchPart, hrp, 1) 
+                            end)
+                            
+                            task.wait(0.3) 
+                        end
+                    end
+                end
+            end
+            StatusLabel.Text = _G.AutoBananaTouch and "Status: Waiting for Bananas..." or "Status: Idle"
+            task.wait(0.5)
+        end
+    end)
+end
+
+-- === INTERAKSI TOMBOL ON/OFF ===
+ToggleButton.MouseButton1Click:Connect(function()
+    _G.AutoBananaTouch = not _G.AutoBananaTouch
+    
+    if _G.AutoBananaTouch then
+        -- Jika ON
+        ToggleButton.Text = "TOGGLE: ON"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50) -- Berubah Hijau
+        StatusLabel.Text = "Status: Starting..."
+        startBananaLoop()
+    else
+        -- Jika OFF
+        ToggleButton.Text = "TOGGLE: OFF"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50) -- Berubah Merah
+        StatusLabel.Text = "Status: Idle"
+    end
+end)
